@@ -1,0 +1,9 @@
+{
+  "watchlist": ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AMD", "NFLX", "JPM"],
+  "upcoming": {
+    "days": 14,
+    "minMarketCapUSD": 20000000000,
+    "maxCompanies": 40
+  },
+  "concurrency": 4
+}

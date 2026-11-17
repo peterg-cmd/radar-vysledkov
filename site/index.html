@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar výsledkov</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%232f6fdf'/><path d='M8 20l5-6 4 3 7-8' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --panel-2:#f1f3f6; --text:#14171c; --muted:#5f6876; --line:#e3e6eb;
+  --accent:#2f6fdf; --accent-soft:#e6eefc;
+  --pos:#14804a; --pos-soft:#e3f4ea; --neg:#c43a31; --neg-soft:#fbe7e5; --neu:#6b7280; --neu-soft:#eef0f3;
+  --warn:#a15c00; --warn-soft:#fff2db;
+  --radius:12px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0e1116; --panel:#161a21; --panel-2:#1d222b; --text:#e8ebf0; --muted:#98a1b0; --line:#2a303b;
+    --accent:#6b9cff; --accent-soft:#1c2a45;
+    --pos:#3ccf7f; --pos-soft:#14301f; --neg:#ff7a70; --neg-soft:#3a1a18; --neu:#a0a8b5; --neu-soft:#232832;
+    --warn:#f0b04a; --warn-soft:#3a2c12; --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;margin-bottom:14px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px}
+.note{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:8px 12px;font-size:12.5px;margin-bottom:16px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow)}
+.kpi b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.kpi span{color:var(--muted);font-size:12.5px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.tab{background:none;border:0;color:var(--muted);font:inherit;font-weight:600;padding:9px 12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab[aria-selected=true]{color:var(--text);border-color:var(--accent)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.controls input,.controls select{font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+.controls input{flex:1 1 200px;min-width:0}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{font:inherit;font-size:13px;background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-weight:600}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.row,.head{display:grid;grid-template-columns:minmax(150px,1.6fr) 1.05fr 1fr .8fr 1.1fr .95fr 1fr;gap:12px;align-items:center;padding:10px 14px}
+.head{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--panel-2);border-bottom:1px solid var(--line)}
+.row{border-bottom:1px solid var(--line);cursor:pointer}
+.row:hover{background:var(--panel-2)}
+.row[aria-expanded=true]{background:var(--panel-2)}
+.tk{font-weight:700;letter-spacing:.01em}
+.nm{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.star{color:#e0a800;margin-left:4px}
+.num{font-variant-numeric:tabular-nums}
+.small{font-size:12px;color:var(--muted)}
+.badge{display:inline-block;font-size:11px;font-weight:600;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:1px}
+.b-bmo{background:var(--accent-soft);color:var(--accent)}
+.b-amc{background:var(--neu-soft);color:var(--text)}
+.b-est{background:var(--warn-soft);color:var(--warn)}
+.b-today{background:var(--neg-soft);color:var(--neg)}
+.sig{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12.5px;border-radius:999px;padding:3px 10px}
+.sig.pozitivny{background:var(--pos-soft);color:var(--pos)}
+.sig.negativny{background:var(--neg-soft);color:var(--neg)}
+.sig.neutralny{background:var(--neu-soft);color:var(--neu)}
+.bar{height:6px;background:var(--panel-2);border-radius:99px;overflow:hidden;margin-top:4px;max-width:110px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.up{color:var(--pos)} .down{color:var(--neg)}
+.lbl{display:none}
+.detail{padding:4px 14px 18px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.card h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 8px}
+.card.wide{grid-column:span 2}
+.card ul{margin:0;padding-left:18px}
+.card li{margin:3px 0}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11.5px;color:var(--muted);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+.tblwrap{overflow-x:auto}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.dist{display:flex;height:10px;border-radius:99px;overflow:hidden;margin:6px 0}
+.links{display:flex;flex-wrap:wrap;gap:6px}
+.links a{color:var(--accent);text-decoration:none;font-size:13px;background:var(--accent-soft);border-radius:6px;padding:3px 8px}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.cal-day{margin-bottom:14px}
+.cal-day h3{font-size:13px;margin:0 0 6px}
+.cal-row{display:grid;grid-template-columns:70px 1fr 90px 110px 70px;gap:10px;padding:6px 14px;border-bottom:1px solid var(--line);align-items:center}
+.cal-row:last-child{border-bottom:0}
+.cal-row.an{cursor:pointer} .cal-row.an:hover{background:var(--panel-2)}
+footer{color:var(--muted);font-size:12px;margin-top:20px}
+svg.spark{width:100%;height:60px;display:block}
+@media (max-width:860px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .head{display:none}
+  .row{grid-template-columns:1fr 1fr;gap:6px 12px}
+  .row>.c-firm{grid-column:1/-1}
+  .lbl{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .grid{grid-template-columns:1fr}
+  .card.wide{grid-column:auto}
+  .cal-row{grid-template-columns:60px 1fr 80px;}
+  .cal-row .c-cap,.cal-row .c-ly{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Radar výsledkov</h1>
+      <div class="sub" id="sub">Americké akcie</div>
+    </div>
+    <div class="sub" id="src"></div>
+  </header>
+  <div class="note">Iba analytický nástroj, nie investičné odporúčanie. „Pravdepodobnosť prekonania“ a „sklon“ sú jednoduché štatistické odhady z verejných dát. Smer pohybu ceny po výsledkoch sa spoľahlivo predpovedať nedá.</div>
+  <div class="kpis" id="kpis"></div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="prehlad">Analýza firiem</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="kalendar">Kalendár (všetky firmy)</button>
+  </div>
+  <section id="prehlad">
+    <div class="controls">
+      <input id="q" type="search" placeholder="Hľadať ticker alebo názov…" aria-label="Hľadať">
+      <div class="chips" id="filters">
+        <button class="chip" data-f="all" aria-pressed="true">Všetko</button>
+        <button class="chip" data-f="week" aria-pressed="false">Do 7 dní</button>
+        <button class="chip" data-f="watch" aria-pressed="false">★ Watchlist</button>
+      </div>
+      <select id="sort" aria-label="Zoradiť">
+        <option value="date">Zoradiť: dátum výsledkov</option>
+        <option value="pbeat">Zoradiť: pravdepodobnosť prekonania</option>
+        <option value="score">Zoradiť: sklon (skóre)</option>
+        <option value="move">Zoradiť: očakávaný pohyb</option>
+        <option value="cap">Zoradiť: trhová kapitalizácia</option>
+      </select>
+    </div>
+    <div class="list">
+      <div class="head">
+        <div>Firma</div><div>Výsledky</div><div>Konsenzus EPS</div><div>Revízie 30d</div><div>Prekoná odhad?</div><div>Očak. pohyb</div><div>Sklon</div>
+      </div>
+      <div id="rows"></div>
+    </div>
+  </section>
+  <section id="kalendar" hidden>
+    <div class="controls">
+      <input id="cq" type="search" placeholder="Hľadať v kalendári…" aria-label="Hľadať v kalendári">
+    </div>
+    <div id="cal"></div>
+  </section>
+  <footer id="foot"></footer>
+</div>
+<script src="data.js"></script>
+<script>
+(function(){
+const D = window.EARNINGS_DATA;
+const $ = s => document.querySelector(s);
+if(!D){ $('#rows').innerHTML = '<div class="empty">Chýbajú dáta. Najprv spusti <b>spusti.bat</b> alebo príkaz <code>node fetch.mjs</code>.</div>'; return; }
+
+const nf = (d=2) => new Intl.NumberFormat('sk-SK',{minimumFractionDigits:d,maximumFractionDigits:d});
+const f2 = v => v==null ? '—' : nf(2).format(v);
+const pct = (v,d=1,sign=false) => v==null ? '—' : (sign && v>0?'+':'') + nf(d).format(v*100)+' %';
+const big = v => { if(v==null) return '—'; const a=Math.abs(v); return a>=1e12? nf(2).format(v/1e12)+' bil.' : a>=1e9? nf(1).format(v/1e9)+' mld.' : a>=1e6? nf(0).format(v/1e6)+' mil.' : nf(0).format(v); };
+const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dayName = iso => new Date(iso+'T12:00:00Z').toLocaleDateString('sk-SK',{weekday:'short',day:'numeric',month:'numeric',timeZone:'UTC'});
+const daysTo = iso => Math.round((new Date(iso+'T12:00:00Z') - new Date(D.today+'T12:00:00Z'))/86400000);
+const SIG = {pozitivny:'Pozitívny',negativny:'Negatívny',neutralny:'Neutrálny'};
+const TIME = {BMO:['pred otvorením','b-bmo'],AMC:['po zatvorení','b-amc']};
+
+$('#sub').textContent = `Americké akcie · aktualizované ${new Date(D.generatedAt).toLocaleString('sk-SK')}`;
+$('#src').textContent = 'Zdroje: ' + D.sources.join(', ');
+
+const C = D.companies;
+const week = C.filter(c=>c.next.date && !c.next.estimated && daysTo(c.next.date)>=0 && daysTo(c.next.date)<=7);
+const kp = [
+  [D.calendar.filter(x=>x.date===D.today).length, 'firiem zverejňuje dnes'],
+  [week.length, 'analyzovaných firiem do 7 dní'],
+  [C.filter(c=>c.inWatchlist).length, 'firiem vo watchliste'],
+  [C.filter(c=>c.model.signal==='pozitivny').length + ' / ' + C.filter(c=>c.model.signal==='negativny').length, 'pozitívny / negatívny sklon'],
+];
+$('#kpis').innerHTML = kp.map(([v,l])=>`<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('');
+
+// --- tabs
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected', x===b));
+  $('#prehlad').hidden = b.dataset.tab!=='prehlad';
+  $('#kalendar').hidden = b.dataset.tab!=='kalendar';
+});
+
+// --- list
+let filter='all', open=new Set();
+const state = (()=>{ try{ return JSON.parse(localStorage.getItem('radar-ui')||'{}'); }catch{ return {}; } })();
+if(state.sort) $('#sort').value = state.sort;
+if(state.filter){ filter = state.filter; }
+document.querySelectorAll('#filters .chip').forEach(b=>{
+  b.setAttribute('aria-pressed', b.dataset.f===filter);
+  b.onclick=()=>{ filter=b.dataset.f; document.querySelectorAll('#filters .chip').forEach(x=>x.setAttribute('aria-pressed',x===b)); save(); render(); };
+});
+$('#q').oninput = render; $('#sort').onchange = ()=>{ save(); render(); };
+function save(){ try{ localStorage.setItem('radar-ui', JSON.stringify({sort:$('#sort').value, filter})); }catch{} }
+
+function dateCell(c){
+  const n=c.next; if(!n.date) return '<span class="small">neznámy</span>';
+  const d=daysTo(n.date);
+  let h=`<span class="num">${dayName(n.date)}</span>`;
+  if(d===0 && !n.estimated) h+=`<span class="badge b-today">dnes</span>`;
+  if(n.time) h+=`<span class="badge ${TIME[n.time][1]}">${n.time==='BMO'?'ráno':'večer'}</span>`;
+  if(n.estimated) h+=`<span class="badge b-est">odhad</span>`;
+  h+=`<div class="small">${d===0?'dnes':d>0?'o '+d+' dní':'pred '+(-d)+' dňami'}</div>`;
+  return h;
+}
+function revCell(c){
+  const t=c.epsTrend, r=c.revisions;
+  const ch = t.current!=null && t.d30 ? (t.current-t.d30)/Math.abs(t.d30) : null;
+  const cls = ch==null||Math.abs(ch)<0.001 ? '' : ch>0?'up':'down';
+  const arrow = cls==='up'?'▲':cls==='down'?'▼':'•';
+  return `<span class="num ${cls}">${arrow} ${pct(ch,1,true)}</span><div class="small">${r.up30??0}↑ ${r.down30??0}↓ analytikov</div>`;
+}
+function rowHTML(c){
+  const m=c.model, y=c.consensus.yahoo||{}, n=c.consensus.nasdaq||{};
+  const im=c.impliedMove;
+  return `<div class="row" role="button" tabindex="0" aria-expanded="${open.has(c.symbol)}" data-s="${c.symbol}">
+    <div class="c-firm"><span class="tk">${esc(c.symbol)}</span>${c.inWatchlist?'<span class="star" title="Watchlist">★</span>':''}
+      <span class="num small" style="margin-left:6px">${f2(c.price)} $ <span class="${c.changePct>0?'up':c.changePct<0?'down':''}">${pct(c.changePct!=null?c.changePct:null,1,true)}</span></span>
+      <div class="nm">${esc(c.name)}</div></div>
+    <div><span class="lbl">Výsledky</span>${dateCell(c)}</div>
+    <div><span class="lbl">Konsenzus EPS</span><span class="num">${f2(y.eps)} $</span><div class="small num">Nasdaq ${f2(n.eps)} · ${y.analysts??'—'} anal.</div></div>
+    <div><span class="lbl">Revízie 30d</span>${revCell(c)}</div>
+    <div><span class="lbl">Prekoná odhad?</span><span class="num">${pct(m.pBeat,0)}</span><div class="bar"><i style="width:${Math.round(m.pBeat*100)}%"></i></div></div>
+    <div><span class="lbl">Očak. pohyb</span><span class="num">${im?'±'+pct(im.pct):'—'}</span><div class="small num">hist. ±${m.avgAbsMove!=null?pct(m.avgAbsMove):'—'}</div></div>
+    <div><span class="lbl">Sklon</span><span class="sig ${m.signal}">${SIG[m.signal]} <span class="num">${m.score>0?'+':''}${m.score}</span></span></div>
+  </div>${open.has(c.symbol)?detailHTML(c):''}`;
+}
+function spark(vals){
+  if(!vals||vals.length<2) return '';
+  const w=300,h=60,mn=Math.min(...vals),mx=Math.max(...vals),r=mx-mn||1;
+  const pts=vals.map((v,i)=>`${(i/(vals.length-1)*w).toFixed(1)},${(h-4-(v-mn)/r*(h-8)).toFixed(1)}`).join(' ');
+  const col = vals.at(-1)>=vals[0]?'var(--pos)':'var(--neg)';
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Cena za 3 mesiace"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function trendBars(t){
+  const pts=[['90 d',t.d90],['60 d',t.d60],['30 d',t.d30],['7 d',t.d7],['teraz',t.current]].filter(x=>x[1]!=null);
+  if(!pts.length) return '<div class="small">Bez dát</div>';
+  const vals=pts.map(p=>p[1]), mn=Math.min(...vals), mx=Math.max(...vals), r=(mx-mn)||Math.abs(mx)*0.02||1;
+  return `<div style="display:flex;gap:8px">${pts.map(([l,v])=>{
+    const hgt=10+((v-mn)/r)*50; return `<div style="flex:1;min-width:0;text-align:center"><div style="height:80px;display:flex;flex-direction:column;justify-content:flex-end"><div class="small num">${f2(v)}</div><div style="height:${hgt}px;background:var(--accent);opacity:${l==='teraz'?1:.45};border-radius:4px 4px 0 0"></div></div><div class="small">${l}</div></div>`;}).join('')}</div>`;
+}
+function gfLink(c){
+  const ex = {NMS:'NASDAQ',NGM:'NASDAQ',NCM:'NASDAQ',NYQ:'NYSE',ASE:'NYSEAMERICAN',PCX:'NYSEARCA'}[c.exchange];
+  return ex ? `https://www.google.com/finance/quote/${encodeURIComponent(c.symbol.replace('-','.'))}:${ex}` : `https://www.google.com/finance?q=${encodeURIComponent(c.symbol)}`;
+}
+function detailHTML(c){
+  const m=c.model, y=c.consensus.yahoo||{}, n=c.consensus.nasdaq||{}, a=c.analysts||{};
+  const hist = c.history.length ? `<div class="tblwrap"><table><thead><tr><th>Štvrťrok</th><th>Zverejnené</th><th>Odhad</th><th>Skutočnosť</th><th>Prekvapenie</th><th>Reakcia ceny</th></tr></thead><tbody>${
+    c.history.map(h=>`<tr><td>${esc(h.quarter)}</td><td>${h.date?new Date(h.date+'T12:00:00Z').toLocaleDateString('sk-SK',{timeZone:'UTC'}):'—'}</td><td>${f2(h.epsEstimate)}</td><td>${f2(h.epsActual)}</td>
+      <td class="${h.surprisePct>0?'up':h.surprisePct<0?'down':''}">${h.surprisePct==null?'—':(h.surprisePct>0?'+':'')+nf(1).format(h.surprisePct)+' %'}</td>
+      <td class="${h.reactionPct>0?'up':h.reactionPct<0?'down':''}">${pct(h.reactionPct,1,true)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="small" style="margin-top:6px">Reakcia ceny = zmena od zatváracej ceny pred dňom zverejnenia po zatváraciu cenu deň po ňom.</div>` : '<div class="small">Bez histórie</div>';
+  const dist = a.dist ? (()=>{ const d=a.dist, tot=d.strongBuy+d.buy+d.hold+d.sell+d.strongSell||1;
+    const seg=[[d.strongBuy,'#14804a','Silný nákup'],[d.buy,'#53b07a','Nákup'],[d.hold,'#9aa3af','Držať'],[d.sell,'#e28a7f','Predaj'],[d.strongSell,'#c43a31','Silný predaj']];
+    return `<div class="dist">${seg.map(([v,col])=>`<i style="width:${v/tot*100}%;background:${col}"></i>`).join('')}</div><div class="small">${seg.map(([v,,l])=>`${l} ${v}`).join(' · ')}</div>`; })() : '';
+  const up = a.targetMean && c.price ? a.targetMean/c.price-1 : null;
+  return `<div class="detail"><div class="grid">
+    <div class="card wide"><h3>Prečo tento odhad</h3><ul>${m.reasons.map(r=>`<li>${esc(r)}</li>`).join('')||'<li>Nedostatok dát</li>'}</ul>
+      <div class="small" style="margin-top:8px">Skóre sklonu (−100 až +100) kombinuje: históriu prekvapení 25 %, revízie odhadov 30 %, minulé reakcie ceny 20 %, nárast ceny pred výsledkami 15 % (opačne) a odporúčania analytikov 10 %.</div></div>
+    <div class="card"><h3>Cena za 3 mesiace</h3>${spark(c.spark)}<dl class="kv" style="margin-top:6px">
+      <dt>1 mesiac</dt><dd class="${c.momentum.m1>0?'up':'down'}">${pct(c.momentum.m1,1,true)}</dd>
+      <dt>3 mesiace</dt><dd class="${c.momentum.m3>0?'up':'down'}">${pct(c.momentum.m3,1,true)}</dd>
+      <dt>Trh. kapitalizácia</dt><dd>${big(c.marketCap)} $</dd></dl></div>
+    <div class="card wide"><h3>História výsledkov (Nasdaq + Yahoo)</h3>${hist}</div>
+    <div class="card"><h3>Vývoj konsenzu EPS</h3>${trendBars(c.epsTrend)}</div>
+    <div class="card"><h3>Odhady na tento štvrťrok</h3><dl class="kv">
+      <dt>EPS Yahoo</dt><dd>${f2(y.eps)} (${f2(y.epsLow)}–${f2(y.epsHigh)})</dd>
+      <dt>EPS Nasdaq</dt><dd>${f2(n.eps)} (${f2(n.epsLow)}–${f2(n.epsHigh)})</dd>
+      <dt>EPS pred rokom</dt><dd>${f2(y.yearAgoEps)} · ${pct(y.growth,0,true)}</dd>
+      <dt>Tržby</dt><dd>${big(y.revenue)} $</dd>
+      <dt>Rozpätie tržieb</dt><dd>${big(y.revenueLow)}–${big(y.revenueHigh)}</dd>
+      <dt>Rast tržieb r/r</dt><dd>${pct(y.revenueGrowth,1,true)}</dd></dl></div>
+    <div class="card"><h3>Opcie a pohyb</h3><dl class="kv">
+      <dt>Očakávaný pohyb</dt><dd>${c.impliedMove?'±'+pct(c.impliedMove.pct):'—'}</dd>
+      <dt>Expirácia</dt><dd>${c.impliedMove?new Date(c.impliedMove.expiration+'T12:00:00Z').toLocaleDateString('sk-SK',{timeZone:'UTC'}):'—'}</dd>
+      <dt>Hist. priem. pohyb</dt><dd>±${pct(m.avgAbsMove)}</dd>
+      <dt>Hist. priem. reakcia</dt><dd>${pct(m.avgReaction,1,true)}</dd></dl>
+      <div class="small" style="margin-top:6px">Očakávaný pohyb = cena ATM straddle (call + put) / cena akcie, najbližšia expirácia po výsledkoch. Opcie sa počítajú len pri výsledkoch do 45 dní.</div></div>
+    <div class="card"><h3>Analytici</h3><dl class="kv">
+      <dt>Odporúčanie</dt><dd>${esc(a.recKey||'—')} (${f2(a.recMean)})</dd>
+      <dt>Cieľová cena</dt><dd>${f2(a.targetMean)} $ <span class="${up>0?'up':'down'}">${pct(up,0,true)}</span></dd>
+      <dt>Rozpätie</dt><dd>${f2(a.targetLow)}–${f2(a.targetHigh)}</dd></dl>${dist}</div>
+    <div class="card"><h3>Overiť v zdrojoch</h3><div class="links">
+      <a href="https://finance.yahoo.com/quote/${encodeURIComponent(c.symbol)}/analysis" target="_blank" rel="noopener">Yahoo analýza</a>
+      <a href="${gfLink(c)}" target="_blank" rel="noopener">Google Finance</a>
+      <a href="https://www.nasdaq.com/market-activity/stocks/${encodeURIComponent(c.symbol.toLowerCase())}/earnings" target="_blank" rel="noopener">Nasdaq earnings</a>
+      <a href="https://www.earningswhispers.com/epsdetails/${encodeURIComponent(c.symbol)}" target="_blank" rel="noopener">Earnings Whispers</a>
+      <a href="https://www.zacks.com/stock/research/${encodeURIComponent(c.symbol)}/earnings-calendar" target="_blank" rel="noopener">Zacks</a>
+    </div><div class="small" style="margin-top:8px">Dátum: ${esc(c.next.source||'—')}${c.next.lastReported?' · posledné výsledky '+new Date(c.next.lastReported+'T12:00:00Z').toLocaleDateString('sk-SK',{timeZone:'UTC'}):''}</div></div>
+  </div></div>`;
+}
+function render(){
+  const q=$('#q').value.trim().toLowerCase(), s=$('#sort').value;
+  let L=C.filter(c=>!q || c.symbol.toLowerCase().includes(q) || (c.name||'').toLowerCase().includes(q));
+  if(filter==='watch') L=L.filter(c=>c.inWatchlist);
+  if(filter==='week') L=L.filter(c=>week.includes(c));
+  const key={date:c=>c.next.date||'9999', pbeat:c=>-c.model.pBeat, score:c=>-c.model.score, move:c=>-(c.impliedMove?.pct??-1), cap:c=>-(c.marketCap||0)}[s];
+  L.sort((a,b)=>{const x=key(a),y=key(b); return x<y?-1:x>y?1:(b.marketCap||0)-(a.marketCap||0);});
+  $('#rows').innerHTML = L.length ? L.map(rowHTML).join('') : '<div class="empty">Nič sa nenašlo.</div>';
+}
+$('#rows').addEventListener('click', e=>{ if(e.target.closest('.detail')) return; const r=e.target.closest('.row'); if(!r) return; const s=r.dataset.s; open.has(s)?open.delete(s):open.add(s); render(); });
+$('#rows').addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('row')){ e.preventDefault(); e.target.click(); }});
+render();
+
+// --- kalendár
+const analyzed = new Set(C.map(c=>c.symbol));
+function renderCal(){
+  const q=$('#cq').value.trim().toLowerCase();
+  const items=D.calendar.filter(x=>!q||x.symbol.toLowerCase().includes(q)||(x.name||'').toLowerCase().includes(q));
+  const byDay={}; items.forEach(x=>(byDay[x.date]=byDay[x.date]||[]).push(x));
+  $('#cal').innerHTML = Object.keys(byDay).sort().map(d=>`<div class="cal-day"><h3>${new Date(d+'T12:00:00Z').toLocaleDateString('sk-SK',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'})} <span class="small">· ${byDay[d].length} firiem</span></h3><div class="list">${
+    byDay[d].map(x=>`<div class="cal-row ${analyzed.has(x.symbol)?'an':''}" data-s="${esc(x.symbol)}"><span class="tk">${esc(x.symbol)}${analyzed.has(x.symbol)?' <span class="badge b-bmo" title="Podrobná analýza v prvej záložke">analýza</span>':''}</span>
+      <span class="nm">${esc(x.name)}${x.time?` <span class="badge ${TIME[x.time][1]}">${TIME[x.time][0]}</span>`:''}</span>
+      <span class="num small">EPS ${x.epsForecast!=null?f2(x.epsForecast):'—'}</span><span class="num small c-cap">${big(x.marketCap)} $</span><span class="num small c-ly">min. r. ${x.lastYearEPS!=null?f2(x.lastYearEPS):'—'}</span></div>`).join('')}</div></div>`).join('') || '<div class="empty">Nič sa nenašlo.</div>';
+}
+$('#cq').oninput=renderCal; renderCal();
+$('#cal').addEventListener('click', e=>{ const r=e.target.closest('.cal-row.an'); if(!r) return;
+  open.add(r.dataset.s); $('#q').value=r.dataset.s; document.querySelector('[data-tab=prehlad]').click(); render(); });
+
+$('#foot').innerHTML = `Dáta: Yahoo Finance (odhady, revízie, opcie, ceny, analytici) a Nasdaq.com (kalendár, konsenzus, história prekvapení). Google Finance nemá verejné API, preto je pri každej firme len odkaz naň.${D.errors.length?'<br>Nepodarilo sa načítať: '+D.errors.map(e=>esc(e.symbol)).join(', '):''}`;
+})();
+</script>
+</body>
+</html>
