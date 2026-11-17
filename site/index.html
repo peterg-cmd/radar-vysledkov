@@ -4,7 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Radar výsledkov</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%232f6fdf'/><path d='M8 20l5-6 4 3 7-8' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="apple-mobile-web-app-title" content="Radar">
 <style>
 :root{
   --bg:#f6f7f9; --panel:#ffffff; --panel-2:#f1f3f6; --text:#14171c; --muted:#5f6876; --line:#e3e6eb;
@@ -108,7 +112,7 @@ svg.spark{width:100%;height:60px;display:block}
 <div class="wrap">
   <header>
     <div>
-      <h1>Radar výsledkov</h1>
+      <h1 style="display:flex;align-items:center;gap:10px"><img src="logo.svg" alt="" width="30" height="30">Radar výsledkov</h1>
       <div class="sub" id="sub">Americké akcie</div>
     </div>
     <div class="sub" id="src"></div>
